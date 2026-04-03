@@ -35,6 +35,8 @@ body{max-width:540px;margin:0 auto;padding:0 0 100px;}
 .dot.live{background:var(--accent);box-shadow:0 0 6px var(--accent);}
 .dot.closed{background:var(--dim);}
 .dot.pre{background:var(--amber);}
+.dot.post{background:var(--amber);}
+.dot.unknown{background:var(--dim);}
 
 /* Hero */
 .hero{padding:8px 16px 16px;}
@@ -72,9 +74,9 @@ body{max-width:540px;margin:0 auto;padding:0 0 100px;}
 .pos-card:hover{border-color:var(--line2);}
 .pos-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px;}
 .pos-left{display:flex;align-items:center;gap:10px;min-width:0;}
-.pos-badge{background:var(--card2);border:1px solid var(--line2);border-radius:6px;padding:5px 9px;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--accent);flex-shrink:0;}
+.pos-badge{background:transparent;border:none;border-radius:0;padding:0;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--sub);flex-shrink:0;letter-spacing:.5px;text-transform:uppercase;}
 .pos-nameblock{min-width:0;}
-.pos-name{font-size:13px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;}
+.pos-name{font-size:16px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px;margin-bottom:3px;}
 .pos-shares{font-size:11px;color:var(--dim);font-family:var(--mono);margin-top:2px;}
 .pos-right{text-align:right;flex-shrink:0;margin-left:8px;}
 .pos-price{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--text);}
@@ -157,22 +159,22 @@ canvas.mini{width:80px;height:36px;display:block;}
 .empty{text-align:center;padding:40px 20px;color:var(--sub);font-size:14px;line-height:2;}
 .empty-ico{font-size:40px;display:block;margin-bottom:8px;}
 
-/* Privacy mode */
-.privacy-bar{position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--card);border-top:1px solid var(--line);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;max-width:540px;margin:0 auto;}
-.privacy-bar-inner{display:flex;align-items:center;gap:12px;width:100%;}
-.priv-label{font-size:13px;color:var(--sub);flex:1;}
-.priv-label strong{color:var(--text);display:block;font-size:14px;}
-.toggle-wrap{display:flex;align-items:center;gap:8px;}
-.toggle{position:relative;width:44px;height:26px;cursor:pointer;}
+/* Bottom bar */
+.bottom-bar{position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--card);border-top:1px solid var(--line);padding:10px 16px;max-width:540px;margin:0 auto;}
+.bottom-bar-row{display:flex;align-items:center;gap:10px;}
+.demo-label{font-size:13px;color:var(--sub);flex:1;line-height:1.3;}
+.demo-label strong{color:var(--text);display:block;font-size:14px;}
+.demo-badge{display:none;background:rgba(245,158,11,.15);color:var(--amber);border:1px solid rgba(245,158,11,.3);font-size:11px;font-family:var(--mono);font-weight:700;padding:3px 8px;border-radius:20px;letter-spacing:.5px;}
+.demo-active .demo-badge{display:inline-block;}
+.toggle{position:relative;width:44px;height:26px;cursor:pointer;flex-shrink:0;}
 .toggle input{opacity:0;width:0;height:0;}
 .toggle-slider{position:absolute;inset:0;background:var(--line2);border-radius:20px;transition:background .2s;}
 .toggle-slider:before{content:'';position:absolute;width:20px;height:20px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .2s;}
-.toggle input:checked + .toggle-slider{background:var(--accent);}
+.toggle input:checked + .toggle-slider{background:var(--amber);}
 .toggle input:checked + .toggle-slider:before{transform:translateX(18px);}
 .export-btns{display:flex;gap:8px;}
 .btn-exp{background:var(--card2);border:1px solid var(--line);color:var(--sub);font-family:var(--font);font-size:12px;font-weight:600;padding:6px 12px;border-radius:var(--r-sm);cursor:pointer;transition:all .15s;}
 .btn-exp:hover{border-color:var(--accent);color:var(--accent);}
-.blurred .hero-value,.blurred .stat-val,.blurred .pos-price,.blurred .pos-val,.blurred .det-stat-val,.blurred .pill{filter:blur(6px);user-select:none;}
 
 /* Toast */
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--line2);border-radius:var(--r-sm);padding:10px 18px;font-size:13px;font-family:var(--mono);color:var(--text);opacity:0;transition:opacity .2s;pointer-events:none;z-index:999;white-space:nowrap;}
@@ -302,20 +304,20 @@ canvas.mini{width:80px;height:36px;display:block;}
 
 <div class="toast" id="toast"></div>
 
-<!-- Privacy & data bar -->
-<div class="privacy-bar">
-  <div class="privacy-bar-inner">
-    <div class="priv-label">
-      <strong>Privacy</strong>
-      Verberg bedragen
+<!-- Bottom bar: demo mode + export/import -->
+<div class="bottom-bar" id="bottomBar">
+  <div class="bottom-bar-row">
+    <div class="demo-label">
+      <strong>Demo-modus <span class="demo-badge" id="demoBadge">DEMO</span></strong>
+      Toon nepdata aan anderen
     </div>
-    <label class="toggle" title="Verberg alle bedragen">
-      <input type="checkbox" id="privToggle" onchange="togglePrivacy(this.checked)">
+    <label class="toggle" title="Schakel demo-modus in">
+      <input type="checkbox" id="demoToggle" onchange="toggleDemo(this.checked)">
       <span class="toggle-slider"></span>
     </label>
     <div class="export-btns">
-      <button class="btn-exp" onclick="exportData()" title="Exporteer portfolio naar bestand">Exporteer</button>
-      <button class="btn-exp" onclick="document.getElementById('importFile').click()" title="Importeer portfolio uit bestand">Importeer</button>
+      <button class="btn-exp" onclick="exportData()">Exporteer</button>
+      <button class="btn-exp" onclick="document.getElementById('importFile').click()">Importeer</button>
       <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
     </div>
   </div>
@@ -332,31 +334,43 @@ var detChartInst = null;
 var selTicker = '', selName = '';
 var acRes = [], acIdx = -1, srchTimer = null;
 
-// ── Market open hours (UTC) ───────────────────────────────────────────────
+// ── Markets — status comes from Yahoo Finance quote metadata ─────────────
 var MARKETS = [
-  {name:'AEX',   open:8,  close:16.5, tz:1,  suffix:['.AS']},
-  {name:'XETRA', open:8,  close:16.5, tz:1,  suffix:['.DE','.HA','.F']},
-  {name:'LSE',   open:8,  close:16.5, tz:0,  suffix:['.L']},
-  {name:'NYSE',  open:9.5,close:16,   tz:-5, suffix:[]},
-  {name:'Nasdaq',open:9.5,close:16,   tz:-5, suffix:[]}
+  {name:'AEX',   exchangeTimezoneName:'Europe/Amsterdam', suffix:['.AS']},
+  {name:'XETRA', exchangeTimezoneName:'Europe/Berlin',    suffix:['.DE','.HA','.F']},
+  {name:'LSE',   exchangeTimezoneName:'Europe/London',    suffix:['.L']},
+  {name:'NYSE',  exchangeTimezoneName:'America/New_York', suffix:[]},
+  {name:'Nasdaq',exchangeTimezoneName:'America/New_York', suffix:[]}
 ];
 
+// marketStates is filled in by refreshAll() from Yahoo quote metadata
+// Values: 'REGULAR' | 'PRE' | 'POST' | 'CLOSED' | null
+var marketStates = {};
+
 function getMarketStatus(mkt) {
-  var now = new Date();
-  // local offset in hours
-  var utcH = now.getUTCHours() + now.getUTCMinutes()/60;
-  var localH = utcH + mkt.tz + (isDST(now) ? 1 : 0);
-  var dow = now.getUTCDay();
-  if (dow===0||dow===6) return 'closed';
-  if (localH >= mkt.open && localH < mkt.close) return 'live';
-  if (localH >= mkt.open - 1 && localH < mkt.open) return 'pre';
-  return 'closed';
+  // Use live Yahoo state if available
+  var state = marketStates[mkt.name];
+  if (state === 'REGULAR') return 'live';
+  if (state === 'PRE')     return 'pre';
+  if (state === 'POST')    return 'post';
+  if (state === 'CLOSED')  return 'closed';
+  // Fallback: no data yet → show unknown
+  return 'unknown';
 }
 
-function isDST(d) {
-  var jan = new Date(d.getFullYear(),0,1).getTimezoneOffset();
-  var jul = new Date(d.getFullYear(),6,1).getTimezoneOffset();
-  return d.getTimezoneOffset() < Math.max(jan,jul);
+// Fill marketStates from a Yahoo quote result
+function updateMarketState(ticker, quoteData) {
+  // quoteData is the meta object from v8/chart or result from v7/quote
+  var state = quoteData.marketState || quoteData.regularMarketState || null;
+  if (!state) return;
+  // Map ticker to market
+  MARKETS.forEach(function(m) {
+    if (m.suffix.length === 0) {
+      if (ticker.indexOf('.') === -1) marketStates[m.name] = state;
+    } else {
+      m.suffix.forEach(function(s){ if (ticker.endsWith(s)) marketStates[m.name] = state; });
+    }
+  });
 }
 
 function getTickerExchanges() {
@@ -382,12 +396,17 @@ function renderMarketBar() {
   var relevant = getTickerExchanges();
   var toShow = portfolio.length > 0
     ? MARKETS.filter(function(m){ return relevant[m.name]; })
-    : MARKETS; // show all if portfolio empty
-  if (!toShow.length) toShow = MARKETS; // fallback
+    : MARKETS;
+  if (!toShow.length) toShow = MARKETS;
   bar.innerHTML = toShow.map(function(m) {
     var st = getMarketStatus(m);
-    var label = st==='live'?'Open':st==='pre'?'Pre-market':'Gesloten';
-    return '<div class="mkt-pill"><span class="dot '+st+'"></span>'+m.name+' <span style="color:'+(st==='live'?'var(--accent)':st==='pre'?'var(--amber)':'var(--dim)')+'">'+label+'</span></div>';
+    var label, col;
+    if      (st==='live')    { label='Open';        col='var(--accent)'; }
+    else if (st==='pre')     { label='Pre-market';  col='var(--amber)'; }
+    else if (st==='post')    { label='Na-market';   col='var(--amber)'; }
+    else if (st==='closed')  { label='Gesloten';    col='var(--dim)'; }
+    else                     { label='Ophalen...';  col='var(--dim)'; }
+    return '<div class="mkt-pill"><span class="dot '+st+'"></span>'+m.name+' <span style="color:'+col+'">'+label+'</span></div>';
   }).join('');
 }
 
@@ -428,12 +447,14 @@ async function fetchQ(ticker) {
         if (!m.regularMarketPrice) continue;
         var prev=m.chartPreviousClose||m.previousClose||m.regularMarketPrice;
         var chg=m.regularMarketPrice-prev;
+        updateMarketState(ticker, m);
         return {price:m.regularMarketPrice,prev:prev,change:chg,changePct:prev?chg/prev*100:0,currency:m.currency||'EUR'};
       }
       if (d.quoteResponse&&d.quoteResponse.result&&d.quoteResponse.result[0]) {
         var q=d.quoteResponse.result[0]; if(!q.regularMarketPrice) continue;
         var prev=q.regularMarketPreviousClose||q.regularMarketPrice;
         var chg=q.regularMarketPrice-prev;
+        updateMarketState(ticker, q);
         return {price:q.regularMarketPrice,prev:prev,change:chg,changePct:prev?chg/prev*100:0,currency:q.currency||'EUR'};
       }
     } catch(e){}
@@ -443,11 +464,17 @@ async function fetchQ(ticker) {
 
 // ── Fetch history ─────────────────────────────────────────────────────────
 async function fetchHist(ticker,range) {
-  var d=await fj('https://query1.finance.yahoo.com/v8/finance/chart/'+ticker+'?interval=1d&range='+range);
+  // Use weekly intervals for longer ranges to get more readable candles
+  var interval = (range==='1y'||range==='5y') ? '1wk' : '1d';
+  var d=await fj('https://query1.finance.yahoo.com/v8/finance/chart/'+ticker+'?interval='+interval+'&range='+range);
   if (!d) return [];
   try {
-    var res=d.chart.result[0],ts=res.timestamp,cl=res.indicators.quote[0].close;
-    return ts.map(function(t,i){return {t:t,v:cl[i]?+cl[i].toFixed(2):null};}).filter(function(p){return p.v!==null;});
+    var res=d.chart.result[0],ts=res.timestamp,q=res.indicators.quote[0];
+    return ts.map(function(t,i){
+      var o=q.open[i],h=q.high[i],l=q.low[i],cl=q.close[i];
+      if (!cl) return null;
+      return {t:t, v:+cl.toFixed(2), o:o?+o.toFixed(2):null, h:h?+h.toFixed(2):null, l:l?+l.toFixed(2):null};
+    }).filter(function(p){return p!==null;});
   } catch(e){return [];}
 }
 
@@ -648,15 +675,14 @@ function renderPositions() {
     div.innerHTML=
       '<div class="pos-top">'+
         '<div class="pos-left">'+
-          '<span class="pos-badge">'+pos.ticker+'</span>'+
           '<div class="pos-nameblock">'+
-            '<div class="pos-name">'+(pos.name||'&mdash;')+'</div>'+
-            '<div class="pos-shares">'+(pos.shares?fmtN(pos.shares,pos.shares%1===0?0:4)+' aandelen':'&mdash;')+'</div>'+
+            '<div class="pos-name">'+(pos.name||pos.ticker)+'</div>'+
+            '<div class="pos-badge">'+pos.ticker+'</div>'+
           '</div>'+
         '</div>'+
         '<div class="pos-right">'+
-          '<div class="pos-price">'+(price?fmtC(price,cur):'\u2014')+'</div>'+
-          '<div class="pos-val">'+(val!=null?'\u20ac'+fmtN(val)+' totaal':'\u2014')+'</div>'+ // FIX #3
+          '<div class="pos-total">'+(val!=null?'\u20ac'+fmtN(val):'\u2014')+'</div>'+
+          '<div class="pos-price-small">'+(price?fmtC(price,cur)+' / aand.':'\u2014')+'</div>'+
         '</div>'+
       '</div>'+
       '<div class="pos-bottom">'+
@@ -760,21 +786,26 @@ function openDetail(ticker) {
 
 async function loadDetChart() {
   var data=await fetchHist(detTicker,detRange);
-  var vals=data.map(function(p){return p.v;});
+  if (!data.length) return;
   var lbls=data.map(function(p){var d=new Date(p.t*1000);return d.toLocaleDateString('nl-NL',{month:'short',day:'numeric'});});
+  var vals=data.map(function(p){return p.v;});
   var isPos=vals.length>1&&vals[vals.length-1]>=vals[0];
   var col=isPos?'#00d4a0':'#f05252';
   var ctx=document.getElementById('detChart').getContext('2d');
   if (detChartInst) detChartInst.destroy();
   detChartInst=new Chart(ctx,{type:'line',
     data:{labels:lbls,datasets:[{data:vals,borderColor:col,
-      backgroundColor:function(c){var g=c.chart.ctx.createLinearGradient(0,0,0,160);g.addColorStop(0,col+'44');g.addColorStop(1,col+'00');return g;},
+      backgroundColor:function(ch){var g=ch.chart.ctx.createLinearGradient(0,0,0,160);g.addColorStop(0,col+'44');g.addColorStop(1,col+'00');return g;},
       borderWidth:2,pointRadius:0,tension:.3,fill:true}]},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return ' '+fmtN(c.parsed.y);}},
-        backgroundColor:'#121820',borderColor:'#1e2d3d',borderWidth:1,bodyColor:'#f0f4f8',bodyFont:{family:'JetBrains Mono',size:11}}},
-      scales:{x:{grid:{color:'#1e2d3d'},ticks:{color:'#8899aa',font:{family:'JetBrains Mono',size:9},maxTicksLimit:6}},
-              y:{grid:{color:'#1e2d3d'},ticks:{color:'#8899aa',font:{family:'JetBrains Mono',size:9}}}}}
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(item){return ' '+fmtN(item.parsed.y);}},
+        backgroundColor:'#121820',borderColor:'#1e2d3d',borderWidth:1,
+        bodyColor:'#f0f4f8',bodyFont:{family:'JetBrains Mono',size:11}}},
+      scales:{
+        x:{grid:{color:'#1e2d3d'},ticks:{color:'#8899aa',font:{family:'JetBrains Mono',size:9},maxTicksLimit:8}},
+        y:{grid:{color:'#1e2d3d'},ticks:{color:'#8899aa',font:{family:'JetBrains Mono',size:9}}}
+      }
+    }
   });
 }
 
@@ -827,12 +858,39 @@ document.addEventListener('keydown',function(e){
 });
 document.addEventListener('click',function(e){if(!e.target.closest('#swrap'))document.getElementById('acDrop').classList.remove('open');});
 
-// ── Privacy mode ─────────────────────────────────────────────────────────────────────────────────
-var privacyOn = false;
-function togglePrivacy(on) {
-  privacyOn = on;
-  document.body.classList.toggle('blurred', on);
-  localStorage.setItem('pf_privacy', on ? '1' : '0');
+// ── Demo mode ────────────────────────────────────────────────────────────
+// Demo portfolio: realistic-looking but fake holdings
+var DEMO_PORTFOLIO = [
+  {ticker:'RDSA.AS', name:'Shell plc',               shares:47,  costBasis:27.40},
+  {ticker:'PHIA.AS', name:'Philips N.V.',             shares:120, costBasis:18.50},
+  {ticker:'ING.AS',  name:'ING Groep N.V.',           shares:200, costBasis:11.20},
+  {ticker:'VWRL.AS', name:'Vanguard FTSE All-World',  shares:30,  costBasis:98.00},
+  {ticker:'AAPL',    name:'Apple Inc.',               shares:8,   costBasis:155.00},
+  {ticker:'MSFT',    name:'Microsoft Corporation',    shares:5,   costBasis:290.00}
+];
+
+var demoOn = false;
+var realPortfolio = null; // stores real data while demo is active
+
+function toggleDemo(on) {
+  demoOn = on;
+  document.getElementById('bottomBar').classList.toggle('demo-active', on);
+  document.getElementById('demoBadge').style.display = on ? 'inline-block' : 'none';
+  if (on) {
+    realPortfolio = portfolio.slice(); // save real data
+    portfolio = DEMO_PORTFOLIO.slice();
+    quotes = {}; // clear so demo prices get fetched fresh
+    render();
+    refreshAll();
+    showToast('Demo-modus aan — nepdata wordt getoond');
+  } else {
+    portfolio = realPortfolio || [];
+    realPortfolio = null;
+    quotes = {};
+    render();
+    refreshAll();
+    showToast('Demo-modus uit — jouw portfolio is terug');
+  }
 }
 
 // ── Export / Import ──────────────────────────────────────────────────────────────────────────
@@ -871,13 +929,7 @@ function importData(e) {
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────
-// Restore privacy state
-var savedPrivacy = localStorage.getItem('pf_privacy');
-if (savedPrivacy === '1') {
-  privacyOn = true;
-  document.getElementById('privToggle').checked = true;
-  document.body.classList.add('blurred');
-}
+// Demo mode starts off
 
 renderMarketBar();
 render();
