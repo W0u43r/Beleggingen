@@ -334,69 +334,97 @@ var detChartInst = null;
 var selTicker = '', selName = '';
 var acRes = [], acIdx = -1, srchTimer = null;
 
-// ── Markets — status comes from Yahoo Finance quote metadata ─────────────
+// ── Markets ───────────────────────────────────────────────────────────────
 var MARKETS = [
-  {name:'AEX',   exchangeTimezoneName:'Europe/Amsterdam', suffix:['.AS']},
-  {name:'XETRA', exchangeTimezoneName:'Europe/Berlin',    suffix:['.DE','.HA','.F']},
-  {name:'LSE',   exchangeTimezoneName:'Europe/London',    suffix:['.L']},
-  {name:'NYSE',  exchangeTimezoneName:'America/New_York', suffix:[]},
-  {name:'Nasdaq',exchangeTimezoneName:'America/New_York', suffix:[]}
+  {name:'AEX',    suffix:['.AS'],         probe:'ASML.AS', tz:1,  open:9,   close:17.5},
+  {name:'XETRA',  suffix:['.DE','.HA','.F'], probe:'SAP.DE',  tz:1,  open:9,   close:17.5},
+  {name:'LSE',    suffix:['.L'],          probe:'SHEL.L',  tz:0,  open:8,   close:16.5},
+  {name:'NYSE',   suffix:[],             probe:'KO',      tz:-5, open:9.5, close:16},
+  {name:'Nasdaq', suffix:[],             probe:'MSFT',    tz:-5, open:9.5, close:16}
 ];
 
-// marketStates is filled in by refreshAll() from Yahoo quote metadata
-// Values: 'REGULAR' | 'PRE' | 'POST' | 'CLOSED' | null
+// Live states fetched from Yahoo v7/quote — 'REGULAR'|'PRE'|'POST'|'CLOSED'
 var marketStates = {};
 
+// Called after fetchQ succeeds — extract marketState from quote data
+function updateMarketState(ticker, quoteData) {
+  var state = quoteData.marketState || quoteData.regularMarketState || null;
+  if (!state) return;
+  MARKETS.forEach(function(m) {
+    var match = m.suffix.length === 0
+      ? ticker.indexOf('.') === -1
+      : m.suffix.some(function(s){ return ticker.endsWith(s); });
+    if (match) marketStates[m.name] = state;
+  });
+}
+
+// Dedicated fetch of marketState via v7/quote for one probe ticker
+async function fetchMarketState(mkt, ticker) {
+  var url = 'https://query1.finance.yahoo.com/v7/finance/quote?symbols=' + ticker + '&fields=marketState';
+  var d = await fj(url);
+  if (d && d.quoteResponse && d.quoteResponse.result && d.quoteResponse.result[0]) {
+    var state = d.quoteResponse.result[0].marketState;
+    if (state) { marketStates[mkt.name] = state; return; }
+  }
+  // v2 fallback
+  var url2 = 'https://query2.finance.yahoo.com/v7/finance/quote?symbols=' + ticker + '&fields=marketState';
+  var d2 = await fj(url2);
+  if (d2 && d2.quoteResponse && d2.quoteResponse.result && d2.quoteResponse.result[0]) {
+    var state2 = d2.quoteResponse.result[0].marketState;
+    if (state2) { marketStates[mkt.name] = state2; return; }
+  }
+  // Fallback: compute from clock + DST + weekday
+  marketStates[mkt.name] = computeMarketState(mkt);
+}
+
+function computeMarketState(mkt) {
+  var now = new Date();
+  var dow = now.getUTCDay(); // 0=Sun,6=Sat
+  if (dow === 0 || dow === 6) return 'CLOSED';
+  var dst = isDST(now) ? 1 : 0;
+  var localH = now.getUTCHours() + now.getUTCMinutes()/60 + mkt.tz + dst;
+  if (localH >= mkt.open && localH < mkt.close) return 'REGULAR';
+  if (localH >= mkt.open - 1 && localH < mkt.open) return 'PRE';
+  if (localH >= mkt.close && localH < mkt.close + 1) return 'POST';
+  return 'CLOSED';
+}
+
+function isDST(d) {
+  var jan = new Date(d.getFullYear(),0,1).getTimezoneOffset();
+  var jul = new Date(d.getFullYear(),6,1).getTimezoneOffset();
+  return d.getTimezoneOffset() < Math.max(jan,jul);
+}
+
 function getMarketStatus(mkt) {
-  // Use live Yahoo state if available
   var state = marketStates[mkt.name];
+  if (!state) return computeMarketState(mkt) === 'REGULAR' ? 'live' : 'closed'; // instant fallback
   if (state === 'REGULAR') return 'live';
   if (state === 'PRE')     return 'pre';
   if (state === 'POST')    return 'post';
-  if (state === 'CLOSED')  return 'closed';
-  // Fallback: no data yet → show unknown
-  return 'unknown';
+  return 'closed';
 }
 
-// Fill marketStates from a Yahoo quote result
-function updateMarketState(ticker, quoteData) {
-  // quoteData is the meta object from v8/chart or result from v7/quote
-  var state = quoteData.marketState || quoteData.regularMarketState || null;
-  if (!state) return;
-  // Map ticker to market
-  MARKETS.forEach(function(m) {
-    if (m.suffix.length === 0) {
-      if (ticker.indexOf('.') === -1) marketStates[m.name] = state;
-    } else {
-      m.suffix.forEach(function(s){ if (ticker.endsWith(s)) marketStates[m.name] = state; });
-    }
-  });
+// Fetch market states for all relevant exchanges
+async function refreshMarketStates() {
+  var relevant = getRelevantMarkets();
+  await Promise.all(relevant.map(function(m) {
+    return fetchMarketState(m, m.probe);
+  }));
+  renderMarketBar();
 }
 
-function getTickerExchanges() {
-  // Determine which exchanges are relevant based on held tickers
+function getRelevantMarkets() {
   var tickers = portfolio.map(function(p){return p.ticker;});
-  var relevant = {};
-  MARKETS.forEach(function(m) {
-    if (m.suffix.length === 0) {
-      // NYSE/Nasdaq: relevant if any ticker has no dot (US stocks)
-      var hasUS = tickers.some(function(t){ return t.indexOf('.')===-1; });
-      if (hasUS) relevant[m.name] = true;
-    } else {
-      m.suffix.forEach(function(s){
-        if (tickers.some(function(t){ return t.endsWith(s); })) relevant[m.name] = true;
-      });
-    }
+  if (!tickers.length) return MARKETS;
+  return MARKETS.filter(function(m) {
+    if (m.suffix.length === 0) return tickers.some(function(t){ return t.indexOf('.')===-1; });
+    return m.suffix.some(function(s){ return tickers.some(function(t){ return t.endsWith(s); }); });
   });
-  return relevant;
 }
 
 function renderMarketBar() {
   var bar = document.getElementById('mktBar');
-  var relevant = getTickerExchanges();
-  var toShow = portfolio.length > 0
-    ? MARKETS.filter(function(m){ return relevant[m.name]; })
-    : MARKETS;
+  var toShow = getRelevantMarkets();
   if (!toShow.length) toShow = MARKETS;
   bar.innerHTML = toShow.map(function(m) {
     var st = getMarketStatus(m);
@@ -602,13 +630,13 @@ async function refreshAll() {
   var btn=document.querySelector('.btn-refresh');
   btn.classList.add('spinning'); btn.disabled=true;
   var tickers=portfolio.map(function(p){return p.ticker;}).filter(function(t,i,a){return a.indexOf(t)===i;});
-  // Force fresh fetch — bypass any caching by adding timestamp param
+  // Fetch quotes (also calls updateMarketState per ticker as side effect)
   await Promise.all(tickers.map(async function(t){
-    var q=await fetchQ(t+'?_='+Date.now());
-    if (!q) q=await fetchQ(t); // fallback without timestamp
-    if (q) quotes[t]=q;
+    var q=await fetchQ(t); if(q) quotes[t]=q;
   }));
-  render(); renderMarketBar();
+  // Also fetch market states directly via dedicated probes (more reliable)
+  await refreshMarketStates();
+  render();
   showToast('Bijgewerkt om '+new Date().toLocaleTimeString('nl-NL'));
   btn.classList.remove('spinning'); btn.disabled=false;
 }
@@ -931,8 +959,10 @@ function importData(e) {
 // ── Init ──────────────────────────────────────────────────────────────────
 // Demo mode starts off
 
+// Show instant clock-based status first, then fetch live states
 renderMarketBar();
 render();
+refreshMarketStates(); // always fetch live market states
 if (portfolio.length>0) refreshAll();
 </script>
 </body>
